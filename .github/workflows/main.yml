@@ -70,5 +70,5 @@ jobs:
           helm upgrade --install web ./helm \
             --namespace production \
             --create-namespace \
-            --force \
+            --force-conflicts \
             --set backend.image=moopsdev/laravel-ci-cd:${{ steps.build-image.outputs.image_tag }}
