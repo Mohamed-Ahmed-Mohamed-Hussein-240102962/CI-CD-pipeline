@@ -1,23 +1,35 @@
-name: test
-on: 
-   push:
-     branches: [main]
-   workflow_dispatch:
+name: test and install
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+  release:
+    types: [created,published]
 jobs:
-  first:
+  testing:
     runs-on: self-hosted
     steps:
-      - name: check
+      - name:
+        uses: actions/checkout@v7
+      - name: check for repo
         run: |
-          ip addr show
-          hostnamectl
-  sec:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: check2
+          ls -a 
+          pwd
+      - name: kubectl 
         run: |
-          ip addr show
-          hostnamectl
-          
-          
-  
+             curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+             chmod +x kubectl
+             mkdir -p ~/.local/bin
+             mv ./kubectl ~/.local/bin/kubectl
+             kubectl version --client
+      - name: putting the kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{secrets.KUBE_CONFIG}}" >> ~/.kube/config
+          kubectl version
+          kubectl get nodes
+
+
+
