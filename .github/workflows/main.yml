@@ -33,7 +33,7 @@ jobs:
           kubectl get nodes
       - name: applying edit
         run: |
-           helm upgrade --install web-app ./helm \
+           helm upgrade --install web ./helm \
             --namespace production \
             --create-namespace \
             --set backend.image=moopsdev/laravel-ci-cd:${{ steps.build-image.outputs.image_tag }}
