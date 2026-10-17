@@ -1,36 +1,40 @@
-name: test and install
+name: Test and Install
+
 on:
   push:
     branches:
       - main
-
   workflow_dispatch:
   release:
-    types: [created,published]
+    types: [created, published]
+
 jobs:
   testing:
     runs-on: self-hosted
     steps:
-      - name:
-        uses: actions/checkout@v7
-      - name: check for repo
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for repo
         run: |
-          ls -a 
+          ls -a
           pwd
-      - name: kubectl 
+
+      - name: Install kubectl
         run: |
-             curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-             chmod +x kubectl
-             mkdir -p ~/.local/bin
-             mv ./kubectl ~/.local/bin/kubectl
-             echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-             kubectl version --client
-      - name: putting the kubeconfig
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mkdir -p ~/.local/bin
+          mv ./kubectl ~/.local/bin/kubectl
+          
+          export PATH=$PATH:$HOME/.local/bin
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          
+          kubectl version --client
+
+      - name: Putting the kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{secrets.KUBE_CONFIG}}" >> ~/.kube/config
-          kubectl version
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          kubectl version --client
           kubectl get nodes
-
-
-
