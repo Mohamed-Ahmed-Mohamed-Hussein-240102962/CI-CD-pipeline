@@ -1,0 +1,23 @@
+name: test
+on: 
+   push:
+     branches: [main]
+   workflow_dispatch:
+jobs:
+  first:
+    runs-on: self-hosted
+    steps:
+      - name: check
+        run: |
+          ip addr show
+          hostnamectl
+  sec:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: check2
+        run: |
+          ip addr show
+          hostnamectl
+          
+          
+  
