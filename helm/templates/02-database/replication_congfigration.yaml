@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-scripts
+data:
+  init-config.sh: |
+    #!/bin/bash
+    INDEX=${HOSTNAME##*-}
+    cat <<EOF > /mnt/conf.d/server-id.cnf
+    [mysqld]
+    server-id=$((100 + INDEX))
+    log-bin=mysql-bin
+    gtid_mode=ON
+    enforce_gtid_consistency=ON
+    EOF
+    if [[ "$INDEX" -gt 0 ]]; then
+      echo "read_only=ON" >> /mnt/conf.d/server-id.cnf
+      echo "super_read_only=ON" >> /mnt/conf.d/server-id.cnf
+    fi
+
+  setup-replication.sh: |
+    #!/bin/bash
+    INDEX=${HOSTNAME##*-}
+    if [[ "$INDEX" -eq 0 ]]; then
+      mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "
+        CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY 'ReplicaPass123!';
+        GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+        FLUSH PRIVILEGES;
+      "
+    else
+      until mysqladmin ping -h mysql-0.{{ .Values.mysqlHeadless.name }}.{{ .Release.Namespace }}.svc.cluster.local --silent; do
+        sleep 3
+      done
+      mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "
+        CHANGE REPLICATION SOURCE TO 
+          SOURCE_HOST='mysql-0.{{ .Values.mysqlHeadless.name }}.{{ .Release.Namespace }}.svc.cluster.local', 
+          SOURCE_USER='repl', 
+          SOURCE_PASSWORD='ReplicaPass123!', 
+          SOURCE_AUTO_POSITION=1;
+        START REPLICA;
+      "
+    fi

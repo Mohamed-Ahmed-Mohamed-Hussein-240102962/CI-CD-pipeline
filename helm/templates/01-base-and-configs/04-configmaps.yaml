@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configmaps.appConfigName }}
+data:
+  APP_NAME: "{{ .Values.app.name }}"
+  APP_ENV: "{{ .Values.app.env }}"
+  APP_DEBUG: "{{ .Values.app.debug }}"
+  APP_URL: "{{ .Values.app.url }}"
+  DB_CONNECTION: "{{ .Values.database.connection }}"
+  DB_HOST: "{{ .Values.database.host | default (printf "mysql-headless.%s.svc.cluster.local" .Release.Namespace) }}"
+  DB_PORT: "{{ .Values.database.port }}"
+  DB_DATABASE: "{{ .Values.database.name }}"
+  SESSION_DRIVER: "database"
+  CACHE_STORE: "database"
+  QUEUE_CONNECTION: "database"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configmaps.nginxConfigName }}
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name {{ .Values.nginx.serverName }};
+        root /var/www/html/public;
+        index index.php index.html;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass {{ .Values.nginx.backendService }}:80;
+            fastcgi_index index.php;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            include fastcgi_params;
+            
+            fastcgi_param HTTPS on;
+            fastcgi_param HTTP_X_FORWARDED_PROTO https;
+        }
+    }

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.frontend.name }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.frontend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.frontend.name }}
+    spec:
+      imagePullSecrets:
+      - name: {{ .Values.imagePullSecret.name }}
+      
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+        
+      initContainers:
+      - name: copy-assets
+        image: {{ .Values.backend.image }}
+        command: ["sh", "-c", "cp -r /var/www/html/public/* /shared-public/"]
+        volumeMounts:
+        - name: shared-public
+          mountPath: /shared-public
+
+      containers:
+      - name: nginx
+        image: {{ .Values.frontend.image }}
+        ports:
+        - containerPort: {{ .Values.frontend.containerPort }}
+          name: http
+        volumeMounts:
+        - name: shared-public
+          mountPath: /var/www/html/public
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        resources:
+          requests:
+            cpu: {{ .Values.frontend.resources.requests.cpu }}
+            memory: {{ .Values.frontend.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.frontend.resources.limits.cpu }}
+            memory: {{ .Values.frontend.resources.limits.memory }}
+
+      volumes:
+      - name: shared-public
+        emptyDir: {}
+      - name: nginx-config-volume
+        configMap:
+          name: {{ .Values.configmaps.nginxConfigName }}

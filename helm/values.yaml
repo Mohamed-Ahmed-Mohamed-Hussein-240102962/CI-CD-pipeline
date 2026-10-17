@@ -1,0 +1,127 @@
+imagePullSecret:
+  name: regcred
+  dockerconfigjson: eyJhdXRocyI6eyJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOnsidXNlcm5hbWUiOiJtb29wc2RldiIsInBhc3N3b3JkIjoibWVnb2hqOTg3MjAiLCJhdXRoIjoiYlc5dmNITmtaWFk2YldWbmIyaHFPVGczTWpBPSJ9fX0=
+
+backend:
+  name: laravel-backend
+  replicaCount: 4
+  image: "moopsdev/my-laravel-app:latest"
+  containerPort: 9000
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+backendService:
+  name: laravel-backend-service
+  type:  ClusterIP
+  port: 80
+  targetPort: 9000
+
+backendhpa:
+  name: laravel-backend-hpa
+  minReplicas: 2
+  maxReplicas: 6 
+  averageUtilization: 70
+
+
+mysqlSecret:
+  name: mysql-secrets
+  rootPassword: c2VjcmV0
+  user: bGFyYXZlbA==
+  password: c2VjcmV0
+  appKey: YmFzZTY0OnFOL1hYWm1yVXRZamRDTWdrZzl3bjZjTGJzWXcwUzFxMytnU2g4SmNoWnM9
+
+configmaps:
+  appConfigName: app-config
+  nginxConfigName: nginx-config
+
+app:
+  name: "Library API"
+  env: "production"
+  debug: "false"
+  url: "https://laravel.lib:32140"
+
+database:
+  connection: "mysql"
+  port: "3306"
+  name: "laravel"
+
+nginx:
+  serverName: "laravel.lib"
+  backendService: "laravel-backend-service"
+
+rbac:
+  serviceAccountName: laravel-sa
+  roleName: laravel-role
+  roleBindingName: laravel-rolebinding
+
+storageClass:
+  name: local-storage
+  provisioner: rancher.io/local-path
+  reclaimPolicy: Retain
+  volumeBindingMode: WaitForFirstConsumer 
+
+mysqlHeadless:
+  name: mysql-headless
+  labelApp: mysql
+  port: 3306
+  targetPort: 3306
+  portName: mysql
+
+mysql:
+  name: mysql
+  replicaCount: 1
+  image:
+    repository: mysql
+    tag: "8.0"
+  persistence:
+    size: 2Gi
+  pv:
+    namePrefix: local-pv
+    basePath: /mnt/data
+
+
+frontend:
+  name: nginx-frontend
+  replicaCount: 3
+  image: "nginx:alpine"
+  containerPort: 80
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+frontendService:
+  name: nginx-frontend-service
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+
+frontendhpa:
+  name: nginx-frontend-hpa
+  minReplicas: 2
+  maxReplicas: 6
+  averageUtilization: 70
+
+ingressController:
+  type: NodePort
+  httpNodePort: 30080
+  httpsNodePort: 30443
+
+ingressresource:
+   name: laravel-production-ingress
+
+
+
+tls:
+  tlskey: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRQ2hOYVZ3M1lSUUZNR3IKc20rdVVOQ3ZHV0dqMlFBdDRUdUZlMGJhejk5emNDQ2gyY1phTGN3RjR2UlRsMThYVXExWWdsOWVEVUsxSW9ERApqYW9uRS85THE2a3JiUmloUHJqa2F3TDJQbWNuY2ZUNEplT0NJVDh2QXRCQ3pXOVRXZjVTK1lJU25hdlZ4KytDCjkrUDQ0aG9nZktIVFlCbS9pYndvNVd4d3hxVWdhU2d2YmtYNFdFTnNjdUtsTUIyTER6a3JWaWRqbGRNNFdyUGQKcWFha1hxYmNwcFErY1dTTm1JUXRLNzdnKy9zUHl4VVNzUkxQRU5PcldSSWVqeEhlc2pjdXVOY3AzN1VUQnJRTgpXQXRzVnVWNHFRRHl0bVRIeGY3TmY5SDhqVEZVdVpSTHR5OXZ1dUpQWnlOWDh3Z0lKWXYwWUM0TVpXbnZnamhZCkZYa21qbGlQQWdNQkFBRUNnZ0VBUmtLT1IyR1VNQjdMeGR3d0JvWWNYYVF2Uk96bndoYy9ETThNczRNVHZVa3EKUDhBZFRlSlY0RjdvNDZHK2hQaTRxakd3Qk5xOHJ4dEppWEV0cm5odHRQb3M4Y3RMaDhOQmEvUWp4MVN0T3FqVQovbTNzK1NNcVdYL2RhckFFakF4VjVxM3QvZFVRTmswOFd4VlZHM3pYckQ4RmZJMk95MGJwWmQyUDVKci9EdDkwCmJKd0NYS2hOb1h1a2FNUlRsZ1VkMkliMHBRS3g4aTgrZFE1Z3VaVHMxL2FoYVpKMTMySjAxM1BnQmNRYVNYcWsKNXAybXFDU3lEeWNPSGFmbFB0amZ5M1VLZ21UOWp3dzVzMFVBU0F4YkpCbytrdlM5QjJJOGxIVWZ3WEFRMENSTwpnMnlWTDM5NDdTZGwrS2xTbHhUUVFKcldsanQzZ3diK013NGZrVkZDd1FLQmdRRFp6NzFEaVlKRjB6di9mOGJNCm5Ga0ovOFgxU2FJNll3RUViTlZHY0FncmtocjVIdDI4TmVKNFh6NVlyMkFxOXVYZmt2ZXErZHp4QmQ4aDUzeGkKUXh4U0l3aytlNk56dlVDQkVCWUJiWjh0bVRHTFFXZzRBYWtveG00ekRpY2ovWmU1dlNTSXVBNkdrbndjRG5HKwpuZVhlblVwTHZwZ2FkcnRHNnZuVEFFVEQ0UUtCZ1FDOWVXSXFWbThCMjQvNkdJYUZzVVExSCtNQUFtdnJ2M1k4CkMwUXlHZGp0MS8rZGM2cGJJWDQrSHhyRGl2M3h3OEtDM0xUci9TVmh5R2xrRWFDQXRXTk54V3VXa2dzYXdDTEcKemtUOTVSMVlEdUp3MVVLOUczR1BiREp1WUNVcENzS3V1Um1JbCtMR2xjSGppTnY4aWUvaE5BZ2lNcTQ0cUUwdQorekNkcytxcWJ3S0JnUUN5aHlEVmU1OUl4a1AyUHZCZWc0UkR1dDZ5RjRHZUk4b1FxM2dBZlJGbFRTTklzREVFCjlKSEZJaVFESXZSTEl3WDF4QXUybTRpcUVhcjdxalo4Z0E5MWozd2pOOG9Zc3JWdFZCY0ZZcW5IQVRybnJsdlQKRkNGbjU0VXAyZDdoRkJuSnh5dHIySmtuV21mWncwa2QrV1FSbkpEcUZyV3JjMGc3YjV3SGc3L1pZUUtCZ1FDbwpxSUVTVU1nVmJqMDJFVmpGYnVyWkl4NHNadnRyNlkwMG00N0R6akJFWDA0ZytORyt0d3lwL1lRVVpnZndpaUg5CjNMcUxpbFlaT1kxZXp6WUErL1YrUitxaUtEUU1SdFZ1QkRSemtOdlRBOFRiVFdwUDdUcmp3UnNQRnpSYzJVQTgKeVhXS0dqRjZOZHBXVVFBSlJ6dXBTbWluRUZmM0JSRlhiYTl6NGJCVXJ3S0JnUUNPWEFmeHFRejhiZXVsZDg3awp4SVllS1IzbFM3eFJwb2xNSGZnTWs3YjRMSi9Zak1lay82QUUwSjNoTFlhQ0w2MGhwZ2VzUFlCRWJZUWlDS25SClNKSmU4WktGeEF6RE5LaTh3R2U3UmFvL2hZcUNFYmY2cWNaQ200c0RiZXhoZHB1TVJXL0RZTGhKbC9xT2lkQkYKU3NyOCtFeDlXaHA1N0FvYitJMlVoRjJlTlE9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==
+
+  name: laravel-tls-secret
+  tlscrt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURNVENDQWhtZ0F3SUJBZ0lVSElYSThPU2d2dEpxeUQ1Q1hBRHQrd3ZEci9Zd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0tERVVNQklHQTFVRUF3d0xiR0Z5WVhabGJDNXNhV0l4RURBT0JnTlZCQW9NQjJ4aGNtRjJaV3d3SGhjTgpNall3T1RFeE1EZ3hNVFU0V2hjTk1qY3dPVEV4TURneE1UVTRXakFvTVJRd0VnWURWUVFEREF0c1lYSmhkbVZzCkxteHBZakVRTUE0R0ExVUVDZ3dIYkdGeVlYWmxiRENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0MKQVFvQ2dnRUJBS0UxcFhEZGhGQVV3YXV5YjY1UTBLOFpZYVBaQUMzaE80VjdSdHJQMzNOd0lLSFp4bG90ekFYaQo5Rk9YWHhkU3JWaUNYMTROUXJVaWdNT05xaWNULzB1cnFTdHRHS0UrdU9SckF2WStaeWR4OVBnbDQ0SWhQeThDCjBFTE5iMU5aL2xMNWdoS2RxOVhINzRMMzQvamlHaUI4b2ROZ0diK0p2Q2psYkhER3BTQnBLQzl1UmZoWVEyeHkKNHFVd0hZc1BPU3RXSjJPVjB6aGFzOTJwcHFSZXB0eW1sRDV4WkkyWWhDMHJ2dUQ3K3cvTEZSS3hFczhRMDZ0WgpFaDZQRWQ2eU55NjQxeW5mdFJNR3RBMVlDMnhXNVhpcEFQSzJaTWZGL3MxLzBmeU5NVlM1bEV1M0wyKzY0azluCkkxZnpDQWdsaS9SZ0xneGxhZStDT0ZnVmVTYU9XSThDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkRFalNxVXYKTERobnFZNFJHblpOQTkvVVJrYkZNQjhHQTFVZEl3UVlNQmFBRkRFalNxVXZMRGhucVk0UkduWk5BOS9VUmtiRgpNQThHQTFVZEV3RUIvd1FGTUFNQkFmOHdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRVQyQXlGOXg4eUtqMWM0CjBjWnJKSktjVElkUmhTNTZlc3RKcXNwZk0yeXlESk04bXpJRUZuclVvS3JiY2h6anhJME5PM3VLbXkyUUJuRm8KK2lFNUJqaGpuYnZnY3psM2toc1gwY2FMUXpBQThEcVZyOS9kcU93ZjR4L05LRk1rcTg1bFJWWGEyVUw3NXRBVApaelhySFVxbVpLSEFXU1I0YTQveWFUSUxXc2dQUXZkVzBSNkJWS2o4bWtDYjB1OWxsOC9VaWtmOHJiSDdwbXV5CnEvazVrNFNYTStDT3cvTG1IWW1JN2ExSTJDUHlpSFRMcGJ1Zm1qbHplN2R1djI1SkVTNjE2N1BydGdnU3pDWGIKbDVNWTF3bDQyWWQzN3NOcVpqSVAxVU5Sek1PTnVnNVI0ZE1CMUd4MGp3Tjd4KytsaFNGVlQwc01ZeE1TNDk1MQpTZEhaMDZnPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==

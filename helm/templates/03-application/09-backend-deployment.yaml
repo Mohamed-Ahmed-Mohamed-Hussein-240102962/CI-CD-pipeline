@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.backend.name }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app: laravel-backend
+  template:
+    metadata:
+      labels:
+        app: laravel-backend
+    spec:
+      imagePullSecrets:
+      - name: {{ .Values.imagePullSecret.name }}
+
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role
+                operator: In
+                values:
+                - worker
+
+      initContainers:
+      - name: run-migrations
+        image: {{ .Values.backend.image }}
+        command: ["php", "artisan", "migrate", "--force"]
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.configmaps.appConfigName }}
+        env:
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysqlSecret.name }}
+              key: MYSQL_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysqlSecret.name }}
+              key: MYSQL_PASSWORD
+
+      containers:
+      - name: laravel-api
+        image: {{ .Values.backend.image }}
+        ports:
+        - containerPort: {{ .Values.backend.containerPort }}
+          name: http
+        
+        resources:
+          requests:
+            cpu: {{ .Values.backend.resources.requests.cpu }}
+            memory: {{ .Values.backend.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.backend.resources.limits.cpu }}
+            memory: {{ .Values.backend.resources.limits.memory }}
+
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.configmaps.appConfigName }}
+        env:
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysqlSecret.name }}
+              key: MYSQL_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysqlSecret.name }}
+              key: MYSQL_PASSWORD
+        - name: APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysqlSecret.name }}
+              key: APP_KEY

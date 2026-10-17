@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.mysql.name }}
+spec:
+  serviceName: "{{ .Values.mysqlHeadless.name }}"
+  replicas: {{ .Values.mysql.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.mysql.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.mysql.name }}
+    spec:
+      initContainers:
+      - name: init-mysql-config
+        image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+        command: ["bash", "/scripts/init-config.sh"]
+        volumeMounts:
+        - name: scripts-volume
+          mountPath: /scripts
+        - name: conf-dir
+          mountPath: /mnt/conf.d
+
+      containers:
+      - name: mysql
+        image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+        envFrom:
+        - secretRef:
+            name: {{ .Values.mysqlSecret.name }}
+        env:
+        - name: MYSQL_DATABASE
+          value: "{{ .Values.mysql.dbName }}"
+        ports:
+        - containerPort: {{ .Values.mysqlHeadless.port }}
+          name: mysql
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+        - name: conf-dir
+          mountPath: /etc/mysql/conf.d
+        - name: scripts-volume
+          mountPath: /docker-entrypoint-initdb.d/setup-replication.sh
+          subPath: setup-replication.sh
+
+      volumes:
+      - name: scripts-volume
+        configMap:
+          name: mysql-scripts
+      - name: conf-dir
+        emptyDir: {}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "{{ .Values.storageClass.name }}"
+      resources:
+        requests:
+          storage: {{ .Values.mysql.persistence.size }}
