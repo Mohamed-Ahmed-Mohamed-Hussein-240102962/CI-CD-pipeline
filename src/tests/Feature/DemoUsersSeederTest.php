@@ -13,18 +13,19 @@ class DemoUsersSeederTest extends TestCase
 
     public function test_demo_users_seeder_creates_users_successfully(): void
     {
-        // 1. إنشاء كافة الأدوار اللي بيستخدمها السيدر في الداتابايز المؤقتة
+        // 1. Create every role the seeder assigns (the test DB starts empty)
         Role::create(['name' => 'Admin']);
-        Role::create(['name' => 'Librarian']); // أضفنا دور الـ Librarian هنا
-        Role::create(['name' => 'Member']); 
-        // 2. تشغيل السيدر
+        Role::create(['name' => 'Librarian']);
+        Role::create(['name' => 'Member']);
+
+        // 2. Run the seeder
         $this->seed(DemoUsersSeeder::class);
 
-        // 3. التحقق من البيانات
-        $this->assertDatabaseCount('users', 3); 
+        // 3. Verify the data
+        $this->assertDatabaseCount('users', 3);
 
-        $this->assertDatabaseHas('users', [
-            'email' => 'admin@example.com',  
-        ]);
+        $this->assertDatabaseHas('users', ['email' => 'admin@gmail.com']);
+        $this->assertDatabaseHas('users', ['email' => 'lib@gmail.com']);
+        $this->assertDatabaseHas('users', ['email' => 'mohamed@gmail.com']);
     }
 }
