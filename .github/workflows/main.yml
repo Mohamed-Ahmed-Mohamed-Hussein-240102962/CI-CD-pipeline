@@ -23,6 +23,7 @@ jobs:
              chmod +x kubectl
              mkdir -p ~/.local/bin
              mv ./kubectl ~/.local/bin/kubectl
+             echo "$HOME/.local/bin" >> "$GITHUB_PATH"
              kubectl version --client
       - name: putting the kubeconfig
         run: |
