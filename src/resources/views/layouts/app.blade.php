@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <style>
+        /* Deployment test: change these values on each release to see the new version */
+        :root { --accent: #e11d48; }
+        .navbar { border-bottom: 4px solid #e11d48; }
+    </style>
 </head>
 <body>
     <div class="bg-flares">
@@ -17,7 +22,7 @@
     </div>
 
     <header class="navbar">
-        <a href="/" class="nav-brand">LibrarySys</a>
+        <a href="/" class="nav-brand">LibrarySys v2</a>
         <div class="nav-links">
             @auth
                 <a href="{{ route('dashboard') }}">Dashboard</a>
