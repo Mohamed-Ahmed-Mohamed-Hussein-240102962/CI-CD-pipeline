@@ -16,7 +16,7 @@ class DemoUsersSeederTest extends TestCase
         // 1. إنشاء كافة الأدوار اللي بيستخدمها السيدر في الداتابايز المؤقتة
         Role::create(['name' => 'Admin']);
         Role::create(['name' => 'Librarian']); // أضفنا دور الـ Librarian هنا
-
+        Role::create(['name' => 'Member']); 
         // 2. تشغيل السيدر
         $this->seed(DemoUsersSeeder::class);
 
