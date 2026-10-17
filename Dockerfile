@@ -10,8 +10,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY ./src/composer.json ./src/composer.lock ./
+RUN composer install --no-dev --no-interaction --no-scripts --no-autoloader
 
 COPY ./src .
-
-RUN composer install --no-interaction 
-
+RUN composer dump-autoload --optimize  \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
