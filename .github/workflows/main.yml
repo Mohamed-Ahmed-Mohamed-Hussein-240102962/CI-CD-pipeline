@@ -5,7 +5,7 @@ on:
    workflow_dispatch:
 jobs:
   first:
-    runs-on: [self-hosted, runner-1]
+    runs-on: self-hosted
     steps:
       - name: check
         run: |
